@@ -1,8 +1,9 @@
+
 from scapy.all import *
-from time import time, sleep
-import threading
 from eap import *
 from snoopsys import *
+from time import time, sleep
+
 
 AP_RATES = "\x0c\x12\x18\x24\x30\x48\x60\x6c"
 RSN = "\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x01\x28\x00"
