@@ -1,14 +1,8 @@
 from .eap import *
 from .utility import *
 from scapy.layers.dot11 import *
+from .constants import *
 
-RSN = "\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x01\x28\x00"
-AP_RATES = "\x0c\x12\x18\x24\x30\x48\x60\x6c"
-
-def wiresharkToString(bytes):
-    temp = bytes.replace("\n", "")
-    temp = temp.replace(" ", "")
-    return temp.decode("hex")
 
 class Callbacks(object):
     def __init__(self, ap):
@@ -27,10 +21,10 @@ class Callbacks(object):
     def recv_pkt(self, packet):
         try:
             if Dot11 in packet:
-                if len(packet.notdecoded[8:9]) > 0: # Driver sent radiotap header flags
+                if len(packet.notdecoded[8:9]) > 0:  # Driver sent radiotap header flags
                     # This means it doesn't drop packets with a bad FCS itself
                     flags = ord(packet.notdecoded[8:9])
-                    if flags & 64 != 0: # BAD_FCS flag is set
+                    if flags & 64 != 0:  # BAD_FCS flag is set
                         # Print a warning if we haven't already discovered this MAC
                         if not packet.addr2 is None:
                             debug_print("WARN: Dropping corrupt packet from %s" % packet.addr2, 2)
@@ -69,7 +63,7 @@ class Callbacks(object):
      88 8e 01 00 00 05 01 01 00 05 01 00 00 00 00 00
      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"""
-                            self.ap.unspecified_raw(packet.addr2, wiresharkToString(rawIdentityRequest)) # Raw identity request from wireshark
+                            self.ap.unspecified_raw(packet.addr2, hex_offset_to_string(rawIdentityRequest)) # Raw identity request from wireshark
 
                 # Data packet
                 if packet.type == 0x02:

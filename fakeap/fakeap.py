@@ -4,9 +4,7 @@ from time import time, sleep
 from .eap import *
 from .utility import *
 from .callbacks import Callbacks
-
-
-DEFAULT_DNS_SERVER = "8.8.8.8"
+from .constants import *
 
 
 def get_frequency(channel):
