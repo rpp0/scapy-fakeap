@@ -1,1 +1,1 @@
-__author__ = 'pieter'
+from .fakeap import FakeAccessPoint
