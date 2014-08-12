@@ -1,10 +1,8 @@
 import subprocess
 import re
 import os
-import platform
-
-VERBOSITY = 1
-RUNNING_ON_PI = platform.machine() == 'armv6l'
+import struct
+from .constants import VERBOSITY
 
 
 class Level:
@@ -72,3 +70,19 @@ def hex_offset_to_string(bytes):
     temp = bytes.replace("\n", "")
     temp = temp.replace(" ", "")
     return temp.decode("hex")
+
+
+def get_frequency(channel):
+    freq = 0
+    if channel == 14:
+        freq = 2484
+    else:
+        freq = 2407 + (channel * 5)
+
+    freq_string = struct.pack("<h", freq)
+
+    return freq_string
+
+
+def mac_to_bytes(mac):
+    return ''.join(chr(int(x, 16)) for x in mac.split(':'))

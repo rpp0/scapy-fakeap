@@ -27,7 +27,7 @@ class Callbacks(object):
                     if flags & 64 != 0:  # BAD_FCS flag is set
                         # Print a warning if we haven't already discovered this MAC
                         if not packet.addr2 is None:
-                            debug_print("WARN: Dropping corrupt packet from %s" % packet.addr2, 2)
+                            debug_print("Dropping corrupt packet from %s" % packet.addr2, 2)
                         # Drop this packet
                         return
 
@@ -63,7 +63,7 @@ class Callbacks(object):
      88 8e 01 00 00 05 01 01 00 05 01 00 00 00 00 00
      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
      00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"""
-                            self.ap.unspecified_raw(packet.addr2, hex_offset_to_string(rawIdentityRequest)) # Raw identity request from wireshark
+                            self.unspecified_raw(packet.addr2, hex_offset_to_string(rawIdentityRequest))  # Raw identity request from wireshark
 
                 # Data packet
                 if packet.type == 0x02:
@@ -101,8 +101,8 @@ class Callbacks(object):
 
     def dot11_probe_resp(self, source, ssid):
         probeResponsePacket = self.ap.get_radiotap_header() \
-                            / Dot11(subtype = 5, addr1 = source, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.nextSC()) \
-                            / Dot11ProbeResp(timestamp = self.ap.currentTimestamp(), beacon_interval = 0x0064, cap = 0x2104) \
+                            / Dot11(subtype = 5, addr1 = source, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.next_sc()) \
+                            / Dot11ProbeResp(timestamp = self.ap.current_timestamp(), beacon_interval = 0x0064, cap = 0x2104) \
                             / Dot11Elt(ID = 'SSID', info = ssid) \
                             / Dot11Elt(ID = 'Rates', info = AP_RATES) \
                             / Dot11Elt(ID = 'DSset', info = chr(self.ap.channel))
@@ -130,17 +130,17 @@ class Callbacks(object):
             beaconPacket = beaconPacket / rsnInfo
 
         # Update sequence number
-        beaconPacket.SC = self.ap.nextSC()
+        beaconPacket.SC = self.ap.next_sc()
 
         # Update timestamp
-        beaconPacket[Dot11Beacon].timestamp = self.ap.currentTimestamp()
+        beaconPacket[Dot11Beacon].timestamp = self.ap.current_timestamp()
 
         # Send
         sendp(beaconPacket, iface = self.ap.interface, verbose=False)
 
     def dot11_auth(self, victim):
         authPacket = self.ap.get_radiotap_header() \
-                   / Dot11(subtype = 0x0B, addr1 = victim, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.nextSC()) \
+                   / Dot11(subtype = 0x0B, addr1 = victim, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.next_sc()) \
                    / Dot11Auth(seqnum = 0x02)
 
         debug_print("Injecting Authentication (0x0B)...", 2)
@@ -158,8 +158,8 @@ class Callbacks(object):
         if reassoc == 0x02:
             response_subtype = 0x03
         assocPacket = self.ap.get_radiotap_header() \
-                    / Dot11(subtype = response_subtype, addr1 = victim, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.nextSC()) \
-                    / Dot11AssoResp(cap = 0x2104, status = 0, AID = self.ap.nextAID()) \
+                    / Dot11(subtype = response_subtype, addr1 = victim, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.next_sc()) \
+                    / Dot11AssoResp(cap = 0x2104, status = 0, AID = self.ap.next_aid()) \
                     / Dot11Elt(ID = 'Rates', info = AP_RATES)
 
         debug_print("Injecting Association Response (0x01)...", 2)
@@ -167,14 +167,14 @@ class Callbacks(object):
 
     def dot11_cts(self, victim):
         CTSPacket = self.ap.get_radiotap_header() \
-                  / Dot11(ID = 0x99, type = 'Control', subtype = 12, addr1 = victim, addr2 = self.ap.mac, SC = self.ap.nextSC())
+                  / Dot11(ID = 0x99, type = 'Control', subtype = 12, addr1 = victim, addr2 = self.ap.mac, SC = self.ap.next_sc())
 
         debug_print("Injecting CTS (0x0C)...", 2)
         sendp(CTSPacket, iface = self.ap.interface, verbose = False)
 
     def arp_resp(self, victimMac, victimIp):
         ARPPacket = self.ap.get_radiotap_header() \
-                  / Dot11(type = "Data", subtype = 0, addr1 = victimMac, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.nextSC(), FCfield = 'from-DS') \
+                  / Dot11(type = "Data", subtype = 0, addr1 = victimMac, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.next_sc(), FCfield = 'from-DS') \
                   / LLC(dsap = 0xaa, ssap = 0xaa, ctrl = 0x03) \
                   / SNAP(OUI = 0x000000, code = ETH_P_ARP) \
                   / ARP(psrc = self.ap.ip, pdst = victimIp, op = "is-at", hwsrc = self.ap.mac, hwdst = victimMac)
@@ -184,7 +184,7 @@ class Callbacks(object):
 
     def dot1X_eap_resp(self, victim, eap_code, eap_type, eap_data):
         EAPPacket = self.ap.get_radiotap_header() \
-                        / Dot11(type = "Data", subtype = 0, addr1 = victim, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.nextSC(), FCfield = 'from-DS') \
+                        / Dot11(type = "Data", subtype = 0, addr1 = victim, addr2 = self.ap.mac, addr3 = self.ap.mac, SC = self.ap.next_sc(), FCfield = 'from-DS') \
                         / LLC(dsap = 0xaa, ssap = 0xaa, ctrl = 0x03) \
                         / SNAP(OUI = 0x000000, code = 0x888e) \
                         / EAPOL(version = 1, type = 0) \
@@ -195,3 +195,9 @@ class Callbacks(object):
 
         debug_print("Injecting EAP Packet (code = %d, type = %d, data = %s)" % (eap_code, eap_type, eap_data), 2)
         sendp(EAPPacket, iface = self.ap.interface, verbose = False)
+
+    def unspecified_raw(self, victim, raw_data):
+        RawPacket = Raw(raw_data)
+
+        debug_print("Injecting RAW packet", 2)
+        sendp(RawPacket, iface = self.ap.interface, verbose = False)

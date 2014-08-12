@@ -1,5 +1,6 @@
 import threading
 
+
 class EAPCode:
     REQUEST = 1
     RESPONSE = 2
@@ -24,9 +25,10 @@ class EAPType:
 
     @classmethod
     def convert_type(cls, type_value):
-        for key,value in vars(cls).iteritems():
+        for key, value in vars(cls).iteritems():
             if value == type_value:
                 return str(key)
+
 
 class EAPManager():
     def __init__(self):
