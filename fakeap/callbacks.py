@@ -41,9 +41,9 @@ class Callbacks(object):
 
                             # If in safe mode, we only reply to probe requests with the name of --ap
                             if '1' == '1':
-                                if ssid == 'testing' or (Dot11Elt in packet and packet[Dot11Elt].len == 0):
+                                if ssid in self.ap.ssids or (Dot11Elt in packet and packet[Dot11Elt].len == 0):
                                     self.ap.add_ssid(ssid)
-                                    self.ap.callbacks.cb_dot11_probe_req(packet.addr2, 'testing')
+                                    self.ap.callbacks.cb_dot11_probe_req(packet.addr2, ssid)
                             else:  # Otherwise, spoof any open network
                                 if ssid != "":  # Don't spoof the broadcast SSID
                                     self.ap.add_ssid(ssid)
