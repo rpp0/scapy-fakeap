@@ -70,56 +70,23 @@ class FakeAccessPoint(object):
         return temp
 
     def get_radiotap_header(self):
-        radiotap_packet = RadioTap(len = 18, present = 'Flags+Rate+Channel+dBm_AntSignal+Antenna', notdecoded = '\x00\x6c' + get_frequency(self.channel) + '\xc0\x00\xc0\x01\x00\x00')
+        radiotap_packet = RadioTap(len=18, present='Flags+Rate+Channel+dBm_AntSignal+Antenna', notdecoded='\x00\x6c' + get_frequency(self.channel) + '\xc0\x00\xc0\x01\x00\x00')
         return radiotap_packet
 
     def handle_dhcp(self, pkt):
         # TODO this DHCP handling is extremely basic. More features will be added later.
-        serverIp = self.ip
         clientIp = "192.168.3.2" # For now just use only one client
-        serverMac = self.mac
         clientMac = pkt.addr2
-        subnetMask = "255.255.255.0"
-        gateway = "0.0.0.0"
 
         #If DHCP Discover then DHCP Offer
         if DHCP in pkt and pkt[DHCP].options[0][1] == 1:
             debug_print("DHCP Discover packet detected", 2)
-
-            dhcpOfferPacket = self.get_radiotap_header() \
-                            / Dot11(type = "Data", subtype = 0, addr1 = "ff:ff:ff:ff:ff:ff", addr2 = serverMac, SC = self.next_sc(), FCfield = 'from-DS') \
-                            / LLC(dsap = 0xaa, ssap = 0xaa, ctrl = 0x03) \
-                            / SNAP(OUI = 0x000000, code = ETH_P_IP) \
-                            / IP(src = serverIp, dst = clientIp) \
-                            / UDP(sport=67, dport=68) \
-                            / BOOTP(op = 2, yiaddr = clientIp, siaddr = serverIp, giaddr = gateway, chaddr = mac_to_bytes(clientMac), xid = pkt[BOOTP].xid) \
-                            / DHCP(options = [('message-type', 'offer')]) \
-                            / DHCP(options = [('subnet_mask', subnetMask)]) \
-                            / DHCP(options = [('server_id', serverIp),('end')])
-
-            sendp(dhcpOfferPacket, iface = self.interface, verbose = False)
-            debug_print("DHCP Offer packet sent", 2)
+            self.callbacks.cb_dhcp_discover(clientMac, clientIp, pkt[BOOTP].xid)
 
         #If DHCP Request then DHCP Ack
         if DHCP in pkt and pkt[DHCP].options[0][1] == 3:
             debug_print("DHCP Request packet detected", 2)
-            dhcpAckPacket = self.get_radiotap_header() \
-                          / Dot11(type = "Data", subtype = 0, addr1 = "ff:ff:ff:ff:ff:ff", addr2 = serverMac, SC = self.next_sc(), FCfield = 'from-DS') \
-                          / LLC(dsap = 0xaa, ssap = 0xaa, ctrl = 0x03) \
-                          / SNAP(OUI = 0x000000, code = ETH_P_IP) \
-                          / IP(src = serverIp, dst = clientIp) \
-                          / UDP(sport = 67,dport = 68) \
-                          / BOOTP(op = 2, yiaddr = clientIp, siaddr = serverIp, giaddr = gateway, chaddr = mac_to_bytes(clientMac), xid = pkt[BOOTP].xid) \
-                          / DHCP(options = [('message-type','ack')]) \
-                          / DHCP(options = [('server_id', serverIp)]) \
-                          / DHCP(options = [('lease_time', 43200)]) \
-                          / DHCP(options = [('subnet_mask', subnetMask)]) \
-                          / DHCP(options = [('router', serverIp)]) \
-                          / DHCP(options = [('name_server', DEFAULT_DNS_SERVER)]) \
-                          / DHCP(options = [('domain', "localdomain")]) \
-                          / DHCP(options = [('end')])
-            sendp(dhcpAckPacket, iface = self.interface, verbose = False)
-            debug_print("DHCP Ack packet sent", 2)
+            self.callbacks.cb_dhcp_request(clientMac, clientIp, pkt[BOOTP].xid)
 
     def run(self):
         # TODO: Fix filter
