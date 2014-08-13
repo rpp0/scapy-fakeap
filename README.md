@@ -5,21 +5,21 @@ Fake wireless Access Point (AP) implementation using Python and Scapy, intended 
 
 
 Motivation
-==========
+----------
 
 Testing 802.11 protocols and implementations for bugs or security vulnerabilities requires a simple and flexible AP implementation. This library aims to provide these features by using the popular packet manipulation program 'Scapy' for data transmission and reception. 
 
 
 Installation
-============
+------------
+
+```python2 setup.py install```
 
 
+Examples
+--------
 
-
-A simple example
-================
-
-```
+```python
 # This example is a simple 'hello world' for scapy-fakeap.
 # An open network will be created that can be joined by 802.11 enabled devices.
 
@@ -34,7 +34,7 @@ For more examples, please see the 'examples' folder.
 
 
 Callbacks
-=========
+---------
 
 The behaviour of the AP can be completely customized by changing the callbacks associated with a certain event. To do this, pass a custom ```Callbacks()``` object to the ```FakeAccessPoint``` constructor or to an instance during runtime. Currently, the following callbacks are provided:
 
@@ -48,12 +48,11 @@ The behaviour of the AP can be completely customized by changing the callbacks a
 - ```cb_dot1X_eap_req```: Triggered on reception of an 802.1X EAP Request frame. The default behaviour is to reply with an 802.1X EAP Response frame.
 
 
-Writing your own callback:
-==========================
+### Writing your own callback:
 
 The following example shows how a custom callback for a Callbacks() instance can be easily created:
 
-```
+```python
 # This example demonstrates how to create a new callback for a specific Callbacks() instance.
 # The callback will trigger each time an EAPOL packet is sniffed.
 
