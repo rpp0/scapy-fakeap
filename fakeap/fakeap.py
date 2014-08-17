@@ -1,10 +1,11 @@
 
 from scapy.all import *
-from time import time, sleep
 from .eap import *
 from .utility import *
 from .callbacks import Callbacks
-from .constants import *
+from time import time, sleep
+from scapy.layers.dot11 import Dot11
+
 
 
 class FakeAccessPoint(object):
@@ -23,19 +24,20 @@ class FakeAccessPoint(object):
                 # Sleep
                 sleep(self.interval)
 
-    def __init__(self, interface, channel, mac, wpa=False):
+    def __init__(self, interface, channel, mac, wpa=False, lfilter=lambda(r): Dot11 in r and r[Dot11].subtype != 8):
         self.ssids = []
 
-        self.mac = mac
-        self.ip = "192.168.3.1"
+        self.interface = interface
         self.channel = channel
+        self.mac = mac
+        self.wpa = wpa
+        self.lfilter = lfilter
+        self.ip = "10.0.0.1"
         self.boottime = time()
         self.sc = 0
         self.aid = 0
         self.mutex = threading.Lock()
-        self.wpa = wpa
         self.eap_manager = EAPManager()
-        self.interface = interface
 
         self.beaconTransmitter = self.FakeBeaconTransmitter(self)
         self.beaconTransmitter.start()
@@ -75,7 +77,7 @@ class FakeAccessPoint(object):
 
     def handle_dhcp(self, pkt):
         # TODO this DHCP handling is extremely basic. More features will be added later.
-        clientIp = "192.168.3.2" # For now just use only one client
+        clientIp = "10.0.0.2" # For now just use only one client
         clientMac = pkt.addr2
 
         #If DHCP Discover then DHCP Offer
@@ -89,5 +91,5 @@ class FakeAccessPoint(object):
             self.callbacks.cb_dhcp_request(clientMac, clientIp, pkt[BOOTP].xid)
 
     def run(self):
-        # TODO: Fix filter
-        sniff(iface=self.interface, prn=self.callbacks.cb_recv_pkt, store=0, filter="")
+        # TODO Bug in Scapy prevents using pcap filter
+        sniff(iface=self.interface, prn=self.callbacks.cb_recv_pkt, store=0, lfilter=self.lfilter)
