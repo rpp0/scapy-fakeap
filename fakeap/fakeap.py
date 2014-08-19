@@ -3,6 +3,7 @@ from scapy.all import *
 from .eap import *
 from .utility import *
 from .callbacks import Callbacks
+from .tint import TunInterface
 from time import time, sleep
 from scapy.layers.dot11 import Dot11
 
@@ -26,6 +27,8 @@ class FakeAccessPoint(object):
 
     def __init__(self, interface, channel, mac, wpa=False, lfilter=lambda(r): Dot11 in r and r[Dot11].subtype != 8):
         self.ssids = []
+        self.current_ssid_index = 0
+        self.tint = TunInterface("fakeap")
 
         self.interface = interface
         self.channel = channel
@@ -52,6 +55,14 @@ class FakeAccessPoint(object):
         if ssid in self.ssids:
             self.ssids.remove(ssid)
 
+    def get_ssid(self):
+        if len(self.ssids) > 0:
+            return self.ssids[self.current_ssid_index]
+
+    def cycle_ssid(self):
+        maxidx = len(self.ssids)
+        self.current_ssid_index = ((self.current_ssid_index + 1) % maxidx)
+
     def current_timestamp(self):
         return (time() - self.boottime) * 1000000
 
@@ -77,8 +88,10 @@ class FakeAccessPoint(object):
 
     def handle_dhcp(self, pkt):
         # TODO this DHCP handling is extremely basic. More features will be added later.
-        clientIp = "10.0.0.2" # For now just use only one client
+        clientIp = "10.0.0.2"  # For now just use only one client
         clientMac = pkt.addr2
+
+        self.tint.write(pkt)  # Write DHCP packet to tunnel so that dnsmasq can parse
 
         #If DHCP Discover then DHCP Offer
         if DHCP in pkt and pkt[DHCP].options[0][1] == 1:

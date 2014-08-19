@@ -48,7 +48,7 @@ class Callbacks(object):
                         # Only send a probe response if one of our own SSIDs is probed
                         if ssid in self.ap.ssids or (Dot11Elt in packet and packet[Dot11Elt].len == 0):
                             self.ap.add_ssid(ssid)
-                            self.ap.callbacks.cb_dot11_probe_req(packet.addr2, ssid)
+                            self.ap.callbacks.cb_dot11_probe_req(packet.addr2, self.ap.get_ssid())
                 elif packet.subtype == DOT11_SUBTYPE_AUTH_REQ:  # Authentication
                     if packet.addr1 == self.ap.mac:  # We are the receivers
                         self.ap.sc = -1  # Reset sequence number
@@ -86,7 +86,8 @@ class Callbacks(object):
                     if packet[ARP].pdst == self.ap.ip:
                         self.ap.callbacks.cb_arp_req(packet.addr2, packet[ARP].psrc)
                 elif DHCP in packet:
-                    self.ap.handle_dhcp(packet)
+                    if packet.addr1 == self.ap.mac:
+                        self.ap.handle_dhcp(packet)
         except Exception as err:
             print("Unknown error: %s" % repr(err))
 
