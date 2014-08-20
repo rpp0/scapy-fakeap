@@ -92,16 +92,25 @@ class FakeAccessPoint(object):
         clientMac = pkt.addr2
 
         self.tint.write(pkt)  # Write DHCP packet to tunnel so that dnsmasq can parse
+        raw_packet = self.tint.read()
+
+        response_packet = self.get_radiotap_header() \
+                          / Dot11(type="Data", subtype=0, addr1=clientMac, addr2=self.mac, SC=self.next_sc(), FCfield='from-DS') \
+                          / LLC(dsap=0xaa, ssap=0xaa, ctrl=0x03) \
+                          / SNAP(OUI=0x000000, code=ETH_P_IP) \
+                          / raw_packet
+
+        sendp(response_packet, iface=self.interface, verbose=False)
 
         #If DHCP Discover then DHCP Offer
-        if DHCP in pkt and pkt[DHCP].options[0][1] == 1:
+        '''if DHCP in pkt and pkt[DHCP].options[0][1] == 1:
             debug_print("DHCP Discover packet detected", 2)
             self.callbacks.cb_dhcp_discover(clientMac, clientIp, pkt[BOOTP].xid)
 
         #If DHCP Request then DHCP Ack
         if DHCP in pkt and pkt[DHCP].options[0][1] == 3:
             debug_print("DHCP Request packet detected", 2)
-            self.callbacks.cb_dhcp_request(clientMac, clientIp, pkt[BOOTP].xid)
+            self.callbacks.cb_dhcp_request(clientMac, clientIp, pkt[BOOTP].xid)'''
 
     def run(self):
         # TODO Bug in Scapy prevents using pcap filter

@@ -21,3 +21,4 @@ IFF_TUN = 0x0001
 IFF_TAP = 0x0002  # Should we want to tunnel layer 2...
 IFF_NO_PI = 0x1000
 TUNSETIFF = 0x400454ca
+MAX_PKT_SIZE = 4096

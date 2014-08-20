@@ -21,5 +21,9 @@ class TunInterface():
     def write(self, pkt):
         os.write(self.fd.fileno(), str(pkt[IP]))  # Strip layer 2
 
+    def read(self):
+        raw_packet = os.read(self.fd.fileno(), MAX_PKT_SIZE)
+        return raw_packet
+
     def close(self):
         os.close(self.fd.fileno())
