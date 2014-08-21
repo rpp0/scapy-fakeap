@@ -2,7 +2,8 @@ import subprocess
 import re
 import os
 import struct
-from .constants import VERBOSITY
+
+VERBOSITY = 1
 
 
 class Level:
