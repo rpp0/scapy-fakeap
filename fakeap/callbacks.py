@@ -22,8 +22,10 @@ class Callbacks(object):
 
         self.cb_arp_req = self.arp_resp
 
-        self.cb_dhcp_discover = self.dhcp_offer
-        self.cb_dhcp_request = self.dhcp_ack
+        self.cb_dhcp_discover = self.dot11_to_tint
+        self.cb_dhcp_request = self.dot11_to_tint
+
+        self.cb_tint_read = self.recv_pkt_tint
 
     def recv_pkt(self, packet):
         try:
@@ -87,9 +89,24 @@ class Callbacks(object):
                         self.ap.callbacks.cb_arp_req(packet.addr2, packet[ARP].psrc)
                 elif DHCP in packet:
                     if packet.addr1 == self.ap.mac:
-                        self.ap.handle_dhcp(packet)
+                        if packet[DHCP].options[0][1] == 1:
+                            self.ap.callbacks.cb_dhcp_discover(packet)
+
+                        if packet[DHCP].options[0][1] == 3:
+                            self.ap.callbacks.cb_dhcp_request(packet)
         except Exception as err:
-            print("Unknown error: %s" % repr(err))
+            print("Unknown error at monitor interface: %s" % repr(err))
+
+    def recv_pkt_tint(self, packet):
+        try:
+            packet = IP(packet)  # We expect an IP packet from the external interface
+            if BOOTP in packet:
+                client_mac = bytes_to_mac(packet[BOOTP].chaddr[:6])
+
+                print("DHCP packet for: " + client_mac)
+                self.dot11_encapsulate_ip(client_mac, packet)
+        except Exception as err:
+            print("Unknown error at tun interface: %s" % repr(err))
 
     def dot11_probe_resp(self, source, ssid):
         probe_response_packet = self.ap.get_radiotap_header() \
@@ -224,4 +241,16 @@ class Callbacks(object):
                           / DHCP(options=[('name_server', DEFAULT_DNS_SERVER)]) \
                           / DHCP(options=[('domain', "localdomain")]) \
                           / DHCP(options=['end'])
-        sendp(dhcp_ack_packet, iface = self.ap.interface, verbose = False)
+        sendp(dhcp_ack_packet, iface=self.ap.interface, verbose=False)
+
+    def dot11_encapsulate_ip(self, client_mac, ip_packet):
+        response_packet = self.ap.get_radiotap_header() \
+                          / Dot11(type="Data", subtype=0, addr1=client_mac, addr2=self.ap.mac, SC=self.ap.next_sc(), FCfield='from-DS') \
+                          / LLC(dsap=0xaa, ssap=0xaa, ctrl=0x03) \
+                          / SNAP(OUI=0x000000, code=ETH_P_IP) \
+                          / ip_packet
+
+        sendp(response_packet, iface=self.ap.interface, verbose=False)
+
+    def dot11_to_tint(self, pkt):
+        self.ap.tint.write(pkt)  # Pass to third party application for handling

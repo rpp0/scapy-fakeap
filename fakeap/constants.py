@@ -6,6 +6,8 @@ DEFAULT_DNS_SERVER = "8.8.8.8"
 RSN = "\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x01\x28\x00"
 AP_RATES = "\x0c\x12\x18\x24\x30\x48\x60\x6c"
 
+DOT11_MTU = 4096
+
 DOT11_TYPE_MANAGEMENT = 0
 DOT11_TYPE_CONTROL = 1
 DOT11_TYPE_DATA = 2
@@ -21,4 +23,3 @@ IFF_TUN = 0x0001
 IFF_TAP = 0x0002  # Should we want to tunnel layer 2...
 IFF_NO_PI = 0x1000
 TUNSETIFF = 0x400454ca
-MAX_PKT_SIZE = 4096

@@ -29,7 +29,7 @@ def check_root():
     dev_null = open(os.devnull, 'w')
 
     try:
-        subprocess.check_output(['cat', '/etc/shadow'], stderr = dev_null)
+        subprocess.check_output(['cat', '/etc/shadow'], stderr=dev_null)
     except subprocess.CalledProcessError:
         debug_print(clr(Color.RED, "Run as root."), Level.CRITICAL)
         exit(1)
@@ -86,3 +86,7 @@ def get_frequency(channel):
 
 def mac_to_bytes(mac):
     return ''.join(chr(int(x, 16)) for x in mac.split(':'))
+
+
+def bytes_to_mac(byte_array):
+    return ':'.join("{:02x}".format(ord(byte)) for byte in byte_array)

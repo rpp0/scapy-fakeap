@@ -5,8 +5,7 @@ from .utility import *
 from .callbacks import Callbacks
 from .tint import TunInterface
 from time import time, sleep
-from scapy.layers.dot11 import Dot11
-
+from scapy.layers.dot11 import Dot11, RadioTap
 
 
 class FakeAccessPoint(object):
@@ -28,7 +27,6 @@ class FakeAccessPoint(object):
     def __init__(self, interface, channel, mac, wpa=False, lfilter=lambda(r): Dot11 in r and r[Dot11].subtype != 8):
         self.ssids = []
         self.current_ssid_index = 0
-        self.tint = TunInterface("fakeap")
 
         self.interface = interface
         self.channel = channel
@@ -44,6 +42,9 @@ class FakeAccessPoint(object):
 
         self.beaconTransmitter = self.FakeBeaconTransmitter(self)
         self.beaconTransmitter.start()
+
+        self.tint = TunInterface(self)
+        self.tint.start()
 
         self.callbacks = Callbacks(self)
 
@@ -85,32 +86,6 @@ class FakeAccessPoint(object):
     def get_radiotap_header(self):
         radiotap_packet = RadioTap(len=18, present='Flags+Rate+Channel+dBm_AntSignal+Antenna', notdecoded='\x00\x6c' + get_frequency(self.channel) + '\xc0\x00\xc0\x01\x00\x00')
         return radiotap_packet
-
-    def handle_dhcp(self, pkt):
-        # TODO this DHCP handling is extremely basic. More features will be added later.
-        clientIp = "10.0.0.2"  # For now just use only one client
-        clientMac = pkt.addr2
-
-        self.tint.write(pkt)  # Write DHCP packet to tunnel so that dnsmasq can parse
-        raw_packet = self.tint.read()
-
-        response_packet = self.get_radiotap_header() \
-                          / Dot11(type="Data", subtype=0, addr1=clientMac, addr2=self.mac, SC=self.next_sc(), FCfield='from-DS') \
-                          / LLC(dsap=0xaa, ssap=0xaa, ctrl=0x03) \
-                          / SNAP(OUI=0x000000, code=ETH_P_IP) \
-                          / raw_packet
-
-        sendp(response_packet, iface=self.interface, verbose=False)
-
-        #If DHCP Discover then DHCP Offer
-        '''if DHCP in pkt and pkt[DHCP].options[0][1] == 1:
-            debug_print("DHCP Discover packet detected", 2)
-            self.callbacks.cb_dhcp_discover(clientMac, clientIp, pkt[BOOTP].xid)
-
-        #If DHCP Request then DHCP Ack
-        if DHCP in pkt and pkt[DHCP].options[0][1] == 3:
-            debug_print("DHCP Request packet detected", 2)
-            self.callbacks.cb_dhcp_request(clientMac, clientIp, pkt[BOOTP].xid)'''
 
     def run(self):
         # TODO Bug in Scapy prevents using pcap filter
