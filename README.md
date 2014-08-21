@@ -79,3 +79,9 @@ ap.callbacks = my_callbacks
 ap.add_ssid('My first callback!')
 ap.run()
 ```
+
+
+Service interaction
+-------------------
+
+Upon instantiation of a ```FakeAccessPoint``` object, scapy-fakeap automatically creates the ```fakeap``` virtual interface, which may be used for interacting with other services. For example, you can set it as the listen interface for ```dnsmasq``` to use a DHCP server for your fake AP.

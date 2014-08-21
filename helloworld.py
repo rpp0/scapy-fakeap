@@ -4,5 +4,5 @@
 from fakeap import FakeAccessPoint
 
 ap = FakeAccessPoint('mon0', 1, '10:fe:ed:1d:ae:ca', False)
-ap.add_ssid('Hello scapy-fakeap world!')
+ap.add_ssid('github.com/rpp0/scapy-fakeap')
 ap.run()

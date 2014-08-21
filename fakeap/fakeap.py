@@ -1,7 +1,7 @@
 
 from scapy.all import *
 from .eap import *
-from .utility import *
+from .rpyutils.rpyutils import *
 from .callbacks import Callbacks
 from .tint import TunInterface
 from time import time, sleep
