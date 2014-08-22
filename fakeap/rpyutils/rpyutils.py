@@ -3,8 +3,6 @@ import re
 import os
 import struct
 
-VERBOSITY = 1
-
 
 class Level:
     CRITICAL = 0
@@ -27,12 +25,18 @@ def clr(color, text):
 
 
 def check_root():
+    if not os.geteuid() == 0:
+        printd(clr(Color.RED, "Run as root."), Level.CRITICAL)
+        exit(1)
+
+
+def check_root_shadow():
     dev_null = open(os.devnull, 'w')
 
     try:
         subprocess.check_output(['cat', '/etc/shadow'], stderr=dev_null)
     except subprocess.CalledProcessError:
-        debug_print(clr(Color.RED, "Run as root."), Level.CRITICAL)
+        printd(clr(Color.RED, "Run as root."), Level.CRITICAL)
         exit(1)
 
 
@@ -41,40 +45,30 @@ def set_monitor_mode(wlan_dev, enable=True):
     if enable:
         result = subprocess.check_output(['airmon-ng', 'start', wlan_dev])
         if not "monitor mode enabled on" in result:
-            debug_print(clr(Color.RED, "ERROR: Airmon could not enable monitor mode on device %s. Make sure you are root, and that" \
+            printd(clr(Color.RED, "ERROR: Airmon could not enable monitor mode on device %s. Make sure you are root, and that" \
                                        "your wlan card supports monitor mode." % wlan_dev), Level.CRITICAL)
             exit(1)
         monitor_dev = re.search(r"monitor mode enabled on (\w+)", result).group(1)
 
-        debug_print("Airmon set %s to monitor mode on %s" % (wlan_dev, monitor_dev), Level.INFO)
+        printd("Airmon set %s to monitor mode on %s" % (wlan_dev, monitor_dev), Level.INFO)
     else:
         subprocess.check_output(['airmon-ng', 'stop', wlan_dev])
 
     return monitor_dev
 
 
-def debug_print(string, level):
+def printd(string, level):
     if VERBOSITY >= level:
         print(string)
 
 
-def bytes_to_hex(string):
-    result = ""
-    for letter in string:
-        result += (hex(ord(letter))).split('0x')[1] + ':'
-    result = result.rstrip(':')
-
-    return result
-
-
-def hex_offset_to_string(bytes):
-    temp = bytes.replace("\n", "")
+def hex_offset_to_string(byte_array):
+    temp = byte_array.replace("\n", "")
     temp = temp.replace(" ", "")
     return temp.decode("hex")
 
 
 def get_frequency(channel):
-    freq = 0
     if channel == 14:
         freq = 2484
     else:
@@ -91,3 +85,6 @@ def mac_to_bytes(mac):
 
 def bytes_to_mac(byte_array):
     return ':'.join("{:02x}".format(ord(byte)) for byte in byte_array)
+
+
+VERBOSITY = Level.CRITICAL

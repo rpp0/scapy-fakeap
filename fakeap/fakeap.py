@@ -1,7 +1,7 @@
 
-from scapy.all import *
+from scapy.all import sniff
 from .eap import *
-from .rpyutils.rpyutils import *
+from rpyutils import check_root, get_frequency
 from .callbacks import Callbacks
 from .tint import TunInterface
 from time import time, sleep
@@ -43,8 +43,7 @@ class FakeAccessPoint(object):
         self.beaconTransmitter = self.FakeBeaconTransmitter(self)
         self.beaconTransmitter.start()
 
-        self.tint = TunInterface(self)
-        self.tint.start()
+        self.tint = None
 
         self.callbacks = Callbacks(self)
 
@@ -89,4 +88,7 @@ class FakeAccessPoint(object):
 
     def run(self):
         # TODO Bug in Scapy prevents using pcap filter
+        check_root()
+        self.tint = TunInterface(self)
+        self.tint.start()
         sniff(iface=self.interface, prn=self.callbacks.cb_recv_pkt, store=0, lfilter=self.lfilter)

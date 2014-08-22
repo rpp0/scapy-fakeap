@@ -2,7 +2,7 @@ import fcntl
 import struct
 import os
 import threading
-from scapy.layers.inet import Raw, IP
+from scapy.layers.inet import IP
 
 from constants import *
 
@@ -22,7 +22,7 @@ class TunInterface(threading.Thread):
         ifreq = struct.pack('16sH', name, ifr_flags)
         fcntl.ioctl(self.fd, TUNSETIFF, ifreq)  # Syscall to create interface
 
-        print("Created TUN interface %s" % name)
+        print("Created TUN interface %s. Bind it to your services if needed." % name)
 
         # TODO set IP automatically...
 
