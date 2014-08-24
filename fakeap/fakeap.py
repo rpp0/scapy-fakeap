@@ -4,6 +4,7 @@ from .eap import *
 from rpyutils import check_root, get_frequency
 from .callbacks import Callbacks
 from .tint import TunInterface
+from .conf import Conf
 from time import time, sleep
 from scapy.layers.dot11 import Dot11, RadioTap
 
@@ -23,6 +24,24 @@ class FakeAccessPoint(object):
 
                 # Sleep
                 sleep(self.interval)
+
+    @classmethod
+    def from_file(cls, path):
+        conf = Conf(path)
+
+        # Required
+        interface = conf.get('interface', 'mon0')
+        channel = int(conf.get('channel', 1))
+        wpa = conf.get('wpa', False)
+
+        # Optional
+        mac = conf.get('mac')
+        filter = conf.get('filter')
+
+        # Apply settings
+        ap = FakeAccessPoint(interface, channel, mac, wpa=wpa, lfilter=lambda(r): Dot11 in r and r[Dot11].subtype != 8)
+
+        return ap
 
     def __init__(self, interface, channel, mac, wpa=False, lfilter=lambda(r): Dot11 in r and r[Dot11].subtype != 8):
         self.ssids = []

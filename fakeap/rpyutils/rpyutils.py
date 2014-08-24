@@ -6,8 +6,9 @@ import struct
 
 class Level:
     CRITICAL = 0
-    INFO = 1
-    DEBUG = 2
+    WARNING = 1
+    INFO = 2
+    DEBUG = 3
 
 
 class Color:
@@ -87,4 +88,4 @@ def bytes_to_mac(byte_array):
     return ':'.join("{:02x}".format(ord(byte)) for byte in byte_array)
 
 
-VERBOSITY = Level.CRITICAL
+VERBOSITY = Level.INFO
