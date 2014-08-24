@@ -1,12 +1,12 @@
 
 from scapy.all import sniff
 from .eap import *
-from rpyutils import check_root, get_frequency
+from rpyutils import check_root, get_frequency, if_hwaddr
 from .callbacks import Callbacks
 from .tint import TunInterface
 from .conf import Conf
 from time import time, sleep
-from scapy.layers.dot11 import Dot11, RadioTap
+from scapy.layers.dot11 import RadioTap, conf as scapyconf
 
 
 class FakeAccessPoint(object):
@@ -35,15 +35,16 @@ class FakeAccessPoint(object):
         wpa = conf.get('wpa', False)
 
         # Optional
-        mac = conf.get('mac')
-        filter = conf.get('filter')
+        mac = conf.get('mac', if_hwaddr(interface))
+        bpffilter = conf.get('filter', "")
 
-        # Apply settings
-        ap = FakeAccessPoint(interface, channel, mac, wpa=wpa, lfilter=lambda(r): Dot11 in r and r[Dot11].subtype != 8)
+        # Apply required settings
+        ap = FakeAccessPoint(interface, channel, mac, wpa=wpa, bpffilter=bpffilter)
+        ap.ieee8021x = conf.get('ieee8021x', 0)
 
         return ap
 
-    def __init__(self, interface, channel, mac, wpa=False, lfilter=lambda(r): Dot11 in r and r[Dot11].subtype != 8):
+    def __init__(self, interface, channel, mac, wpa=False, bpffilter=""):
         self.ssids = []
         self.current_ssid_index = 0
 
@@ -51,7 +52,10 @@ class FakeAccessPoint(object):
         self.channel = channel
         self.mac = mac
         self.wpa = wpa
-        self.lfilter = lfilter
+        self.ieee8021x = 0
+        self.lfilter = None
+        if bpffilter == "":
+            self.bpffilter = "not ( wlan type mgt subtype beacon ) and ((ether dst host " + self.mac + ") or (ether dst host ff:ff:ff:ff:ff:ff))"
         self.ip = "10.0.0.1"
         self.boottime = time()
         self.sc = 0
@@ -106,8 +110,8 @@ class FakeAccessPoint(object):
         return radiotap_packet
 
     def run(self):
-        # TODO Bug in Scapy prevents using pcap filter
         check_root()
         self.tint = TunInterface(self)
         self.tint.start()
-        sniff(iface=self.interface, prn=self.callbacks.cb_recv_pkt, store=0, lfilter=self.lfilter)
+        scapyconf.iface = self.interface
+        sniff(iface=self.interface, prn=self.callbacks.cb_recv_pkt, store=0, filter=self.bpffilter)

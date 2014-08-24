@@ -2,6 +2,7 @@ import subprocess
 import re
 import os
 import struct
+from scapy.arch import str2mac, get_if_raw_hwaddr
 
 
 class Level:
@@ -86,6 +87,11 @@ def mac_to_bytes(mac):
 
 def bytes_to_mac(byte_array):
     return ':'.join("{:02x}".format(ord(byte)) for byte in byte_array)
+
+
+# Scapy sees mon0 interface as invalid address family, so we write our own
+def if_hwaddr(iff):
+    return str2mac(get_if_raw_hwaddr(iff)[1])
 
 
 VERBOSITY = Level.INFO

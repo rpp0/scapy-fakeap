@@ -117,7 +117,7 @@ class Callbacks(object):
                                 / Dot11Elt(ID='DSset', info=chr(self.ap.channel))
 
         # If we are an RSN network, add RSN data to response
-        if self.ap.wpa:
+        if self.ap.ieee8021x:
             probe_response_packet[Dot11ProbeResp].cap = 0x3101
             rsn_info = Dot11Elt(ID='RSNinfo', info=RSN)
             probe_response_packet = probe_response_packet / rsn_info
@@ -133,7 +133,7 @@ class Callbacks(object):
                      / Dot11Elt(ID='Rates', info=AP_RATES)                                               \
                      / Dot11Elt(ID='DSset', info=chr(self.ap.channel))
 
-        if self.ap.wpa:
+        if self.ap.ieee8021x:
             beacon_packet[Dot11Beacon].cap = 0x3101
             rsn_info = Dot11Elt(ID='RSNinfo', info=RSN)
             beacon_packet = beacon_packet / rsn_info

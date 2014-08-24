@@ -1,9 +1,15 @@
 import platform
 
-VERBOSITY = 1
 RUNNING_ON_PI = platform.machine() == 'armv6l'
 DEFAULT_DNS_SERVER = "8.8.8.8"
 RSN = "\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x04\x01\x00\x00\x0f\xac\x01\x28\x00"
+
+AP_WLAN_TYPE_OPEN = 0
+AP_WLAN_TYPE_WPA = 1
+AP_WLAN_TYPE_WPA2 = 2
+AP_WLAN_TYPE_WPA_WPA2 = 3
+AP_AUTH_TYPE_OPEN = 0
+AP_AUTH_TYPE_SHARED = 1
 AP_RATES = "\x0c\x12\x18\x24\x30\x48\x60\x6c"
 
 DOT11_MTU = 4096
