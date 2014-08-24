@@ -28,7 +28,7 @@ class Conf(ConfigParser):
             value = ConfigParser.get(self, 'fakeap', key)
         except NoOptionError as e:
             value = default
-            printd("Option '%s' not specified in config file." % e.option, Level.WARNING)
+            printd("Option '%s' not specified in config file. Using default." % e.option, Level.WARNING)
 
         printd("%s -> %s" % (key, value), Level.INFO)
 

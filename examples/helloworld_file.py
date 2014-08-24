@@ -5,5 +5,4 @@
 from fakeap import FakeAccessPoint
 
 ap = FakeAccessPoint.from_file('example.conf')
-ap.add_ssid('github.com/rpp0/scapy-fakeap')
 ap.run()

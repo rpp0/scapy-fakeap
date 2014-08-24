@@ -15,11 +15,12 @@ def my_recv_pkt(self, pkt):  # We override recv_pkt to include a trigger for our
         self.cb_do_something()
     self.recv_pkt(pkt)
 
-ap = FakeAccessPoint('mon0', 1, '10:fe:ed:1d:ae:ca', AP_WLAN_TYPE_OPEN)
+ap = FakeAccessPoint('mon0', 'My first callback!')
+ap.wpa = AP_WLAN_TYPE_WPA2  # Enable WPA2
+ap.ieee8021x = 1  # Enable 802.1X (WPA-Enterprise)
 my_callbacks = Callbacks(ap)
 my_callbacks.cb_recv_pkt = MethodType(my_recv_pkt, my_callbacks)
 my_callbacks.cb_do_something = MethodType(do_something, my_callbacks)
 ap.callbacks = my_callbacks
 
-ap.add_ssid('My first callback!')
 ap.run()

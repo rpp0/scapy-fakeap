@@ -31,27 +31,29 @@ class FakeAccessPoint(object):
 
         # Required
         interface = conf.get('interface', 'mon0')
-        channel = int(conf.get('channel', 1))
-        wpa = conf.get('wpa', False)
-
-        # Optional
-        mac = conf.get('mac', if_hwaddr(interface))
+        ssid = conf.get('ssid', 'github.com/rpp0/scapy-fakeap')
         bpffilter = conf.get('filter', "")
 
         # Apply required settings
-        ap = FakeAccessPoint(interface, channel, mac, wpa=wpa, bpffilter=bpffilter)
+        ap = FakeAccessPoint(interface, ssid, bpffilter=bpffilter)
+
+        # Apply optional settings
+        ap.channel = int(conf.get('channel', 1))
+        ap.mac = conf.get('mac', if_hwaddr(interface))
+        ap.wpa = conf.get('wpa', 0)
         ap.ieee8021x = conf.get('ieee8021x', 0)
 
         return ap
 
-    def __init__(self, interface, channel, mac, wpa=False, bpffilter=""):
+    def __init__(self, interface, ssid, bpffilter=""):
+        self.callbacks = Callbacks(self)
         self.ssids = []
         self.current_ssid_index = 0
 
         self.interface = interface
-        self.channel = channel
-        self.mac = mac
-        self.wpa = wpa
+        self.channel = 1
+        self.mac = if_hwaddr(interface)
+        self.wpa = 0
         self.ieee8021x = 0
         self.lfilter = None
         if bpffilter == "":
@@ -63,12 +65,11 @@ class FakeAccessPoint(object):
         self.mutex = threading.Lock()
         self.eap_manager = EAPManager()
 
+        self.add_ssid(ssid)
         self.beaconTransmitter = self.FakeBeaconTransmitter(self)
         self.beaconTransmitter.start()
 
         self.tint = None
-
-        self.callbacks = Callbacks(self)
 
     def add_ssid(self, ssid):
         if not ssid in self.ssids and ssid != '':

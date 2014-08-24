@@ -19,14 +19,15 @@ Installation
 Examples
 --------
 
+Setting up a basic AP with ```scapy-fakeap``` is extremely simple, as shown in the example below:
+
 ```python
 # This example is a simple 'hello world' for scapy-fakeap.
 # An open network will be created that can be joined by 802.11 enabled devices.
 
-from fakeap import FakeAccessPoint
+from fakeap import *
 
-ap = FakeAccessPoint('mon0', 1, '10:fe:ed:1d:ae:ca', False)
-ap.add_ssid('Hello scapy-fakeap world!')
+ap = FakeAccessPoint('mon0', 'Hello scapy-fakeap world!')
 ap.run()
 ```
 
@@ -57,8 +58,8 @@ The following example shows how a custom callback for a Callbacks() instance can
 # The callback will trigger each time an EAPOL packet is sniffed.
 
 from types import MethodType
-from fakeap import FakeAccessPoint, Callbacks
 from scapy.layers.dot11 import EAPOL
+from fakeap import *
 
 
 def do_something(self):  # Our custom callback
@@ -70,13 +71,14 @@ def my_recv_pkt(self, packet):  # We override recv_pkt to include a trigger for 
         self.cb_do_something()
     self.recv_pkt(packet)
 
-ap = FakeAccessPoint('mon0', 1, '10:fe:ed:1d:ae:ca', True)
+ap = FakeAccessPoint('mon0', 'My first callback!')
+ap.wpa = AP_WLAN_TYPE_WPA2  # Enable WPA2
+ap.ieee8021x = 1  # Enable 802.1X (WPA-Enterprise)
 my_callbacks = Callbacks(ap)
 my_callbacks.cb_recv_pkt = MethodType(my_recv_pkt, my_callbacks)
 my_callbacks.cb_do_something = MethodType(do_something, my_callbacks)
 ap.callbacks = my_callbacks
 
-ap.add_ssid('My first callback!')
 ap.run()
 ```
 
