@@ -13,7 +13,12 @@ Testing 802.11 protocols and implementations for bugs or security vulnerabilitie
 Installation
 ------------
 
-```python2 setup.py install```
+You will need to have the following packages installed:
+- ```scapy```
+- ```ip```
+- ```airmon-ng```
+
+Then, run ```python2 setup.py install``` to install ```scapy-fakeap```.
 
 
 Examples
@@ -50,8 +55,7 @@ The behaviour of the AP can be completely customized by changing the callbacks a
 
 
 ### Writing your own callback:
-
-The following example shows how a custom callback for a Callbacks() instance can be easily created:
+The following example shows how a custom callback for a ```Callbacks()``` instance can be easily created:
 
 ```python
 # This example demonstrates how to create a new callback for a specific Callbacks() instance.

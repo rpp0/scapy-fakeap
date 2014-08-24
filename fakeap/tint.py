@@ -5,6 +5,7 @@ import threading
 from scapy.layers.inet import IP
 
 from constants import *
+from rpyutils import set_ip_address
 
 
 class TunInterface(threading.Thread):
@@ -16,15 +17,17 @@ class TunInterface(threading.Thread):
 
         self.setDaemon(True)
         self.ap = ap
-        self.fd = open('/dev/net/tun', 'r+b')
 
+        # Virtual interface
+        self.fd = open('/dev/net/tun', 'r+b')
         ifr_flags = IFF_TUN | IFF_NO_PI  # Tun device without packet information
         ifreq = struct.pack('16sH', name, ifr_flags)
         fcntl.ioctl(self.fd, TUNSETIFF, ifreq)  # Syscall to create interface
 
-        print("Created TUN interface %s. Bind it to your services if needed." % name)
+        # Assign IP and bring interface up
+        set_ip_address(name, self.ap.ip)
 
-        # TODO set IP automatically...
+        print("Created TUN interface %s at %s. Bind it to your services if needed." % (name, self.ap.ip))
 
     def write(self, pkt):
         os.write(self.fd.fileno(), str(pkt[IP]))  # Strip layer 2

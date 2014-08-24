@@ -10,6 +10,9 @@ class Level:
     WARNING = 1
     INFO = 2
     DEBUG = 3
+    BLOAT = 4
+
+VERBOSITY = Level.INFO
 
 
 class Color:
@@ -59,6 +62,14 @@ def set_monitor_mode(wlan_dev, enable=True):
     return monitor_dev
 
 
+def set_ip_address(dev, ip):
+    if subprocess.call(['ip', 'addr', 'add', ip, 'dev', dev]):
+        printd("Failed to assign IP address %s to %s." % (ip, dev), Level.CRITICAL)
+
+    if subprocess.call(['ip', 'link', 'set', 'dev', dev, 'up']):
+        printd("Failed to bring device %s up." % dev, Level.CRITICAL)
+
+
 def printd(string, level):
     if VERBOSITY >= level:
         print(string)
@@ -94,4 +105,6 @@ def if_hwaddr(iff):
     return str2mac(get_if_raw_hwaddr(iff)[1])
 
 
-VERBOSITY = Level.INFO
+def set_debug_level(lvl):
+    global VERBOSITY
+    VERBOSITY = lvl

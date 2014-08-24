@@ -42,6 +42,7 @@ class FakeAccessPoint(object):
         ap.mac = conf.get('mac', if_hwaddr(interface))
         ap.wpa = conf.get('wpa', 0)
         ap.ieee8021x = conf.get('ieee8021x', 0)
+        ap.ip = conf.get('ip', '10.0.0.1/24')
 
         return ap
 
@@ -58,7 +59,7 @@ class FakeAccessPoint(object):
         self.lfilter = None
         if bpffilter == "":
             self.bpffilter = "not ( wlan type mgt subtype beacon ) and ((ether dst host " + self.mac + ") or (ether dst host ff:ff:ff:ff:ff:ff))"
-        self.ip = "10.0.0.1"
+        self.ip = '10.0.0.1/24'
         self.boottime = time()
         self.sc = 0
         self.aid = 0

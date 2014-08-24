@@ -35,7 +35,7 @@ class Callbacks(object):
                 if flags & 64 != 0:  # BAD_FCS flag is set
                     # Print a warning if we haven't already discovered this MAC
                     if not packet.addr2 is None:
-                        printd("Dropping corrupt packet from %s" % packet.addr2, Level.DEBUG)
+                        printd("Dropping corrupt packet from %s" % packet.addr2, Level.BLOAT)
                     # Drop this packet
                     return
 
@@ -50,15 +50,15 @@ class Callbacks(object):
                         # Only send a probe response if one of our own SSIDs is probed
                         if ssid in self.ap.ssids or (Dot11Elt in packet and packet[Dot11Elt].len == 0):
                             self.ap.add_ssid(ssid)
-                            self.ap.callbacks.cb_dot11_probe_req(packet.addr2, self.ap.get_ssid())
+                            self.cb_dot11_probe_req(packet.addr2, self.ap.get_ssid())
                 elif packet.subtype == DOT11_SUBTYPE_AUTH_REQ:  # Authentication
                     if packet.addr1 == self.ap.mac:  # We are the receivers
                         self.ap.sc = -1  # Reset sequence number
-                        self.ap.callbacks.cb_dot11_auth(packet.addr2)
+                        self.cb_dot11_auth(packet.addr2)
                 elif packet.subtype == DOT11_SUBTYPE_ASSOC_REQ or packet.subtype == DOT11_SUBTYPE_REASSOC_REQ:
                     if packet.addr1 == self.ap.mac:
-                        self.ap.callbacks.cb_dot11_assoc_req(packet.addr2, packet.subtype)
-                        self.ap.callbacks.cb_dot1X_eap_req(packet.addr2, EAPCode.REQUEST, EAPType.IDENTITY, None)
+                        self.cb_dot11_assoc_req(packet.addr2, packet.subtype)
+                        self.cb_dot1X_eap_req(packet.addr2, EAPCode.REQUEST, EAPType.IDENTITY, None)
 
             # Data packet
             if packet.type == DOT11_TYPE_DATA:
@@ -67,7 +67,7 @@ class Callbacks(object):
                         # EAPOL Start
                         if packet[EAPOL].type == 0x01:
                             self.ap.eap_manager.reset_id()
-                            self.ap.callbacks.dot1x_eap_resp(packet.addr2, EAPCode.REQUEST, EAPType.IDENTITY, None)
+                            self.dot1x_eap_resp(packet.addr2, EAPCode.REQUEST, EAPType.IDENTITY, None)
                 if EAP in packet:
                     if packet[EAP].code == EAPCode.RESPONSE:  # Responses
                         if packet[EAP].type == EAPType.IDENTITY:
@@ -77,7 +77,7 @@ class Callbacks(object):
                                 printd("Got identity: " + identity[0:len(identity) - 4], Level.INFO)
 
                             # Send auth method LEAP
-                            self.ap.callbacks.dot1x_eap_resp(packet.addr2, EAPCode.REQUEST, EAPType.EAP_LEAP, "\x01\x00\x08" + "\x00\x00\x00\x00\x00\x00\x00\x00" + str(identity[0:len(identity) - 4]))
+                            self.dot1x_eap_resp(packet.addr2, EAPCode.REQUEST, EAPType.EAP_LEAP, "\x01\x00\x08" + "\x00\x00\x00\x00\x00\x00\x00\x00" + str(identity[0:len(identity) - 4]))
                         if packet[EAP].type == EAPType.NAK:  # NAK
                             method = str(packet[Raw])
                             method = method[0:len(method) - 4]
@@ -86,14 +86,15 @@ class Callbacks(object):
 
                 elif ARP in packet:
                     if packet[ARP].pdst == self.ap.ip:
-                        self.ap.callbacks.cb_arp_req(packet.addr2, packet[ARP].psrc)
+                        self.cb_arp_req(packet.addr2, packet[ARP].psrc)
                 elif DHCP in packet:
                     if packet.addr1 == self.ap.mac:
                         if packet[DHCP].options[0][1] == 1:
-                            self.ap.callbacks.cb_dhcp_discover(packet)
+                            self.cb_dhcp_discover(packet)
 
                         if packet[DHCP].options[0][1] == 3:
-                            self.ap.callbacks.cb_dhcp_request(packet)
+                            self.cb_dhcp_request(packet)
+
         except Exception as err:
             print("Unknown error at monitor interface: %s" % repr(err))
 
@@ -103,7 +104,7 @@ class Callbacks(object):
             if BOOTP in packet:
                 client_mac = bytes_to_mac(packet[BOOTP].chaddr[:6])
 
-                print("DHCP packet for: " + client_mac)
+                printd("DHCP packet for: " + client_mac, Level.DEBUG)
                 self.dot11_encapsulate_ip(client_mac, packet)
         except Exception as err:
             print("Unknown error at tun interface: %s" % repr(err))
@@ -152,7 +153,7 @@ class Callbacks(object):
                       / Dot11(subtype=0x0B, addr1=receiver, addr2=self.ap.mac, addr3=self.ap.mac, SC=self.ap.next_sc()) \
                       / Dot11Auth(seqnum=0x02)
 
-        printd("Sending Authentication (0x0B)...", 2)
+        printd("Sending Authentication (0x0B)...", Level.DEBUG)
         sendp(auth_packet, iface=self.ap.interface, verbose=False)
 
     def dot11_ack(self, receiver):
@@ -171,14 +172,14 @@ class Callbacks(object):
                        / Dot11AssoResp(cap=0x2104, status=0, AID=self.ap.next_aid()) \
                        / Dot11Elt(ID='Rates', info=AP_RATES)
 
-        printd("Sending Association Response (0x01)...", 2)
+        printd("Sending Association Response (0x01)...", Level.DEBUG)
         sendp(assoc_packet, iface=self.ap.interface, verbose=False)
 
     def dot11_cts(self, receiver):
         cts_packet = self.ap.get_radiotap_header() \
                      / Dot11(ID=0x99, type='Control', subtype=12, addr1=receiver, addr2=self.ap.mac, SC=self.ap.next_sc())
 
-        printd("Sending CTS (0x0C)...", 2)
+        printd("Sending CTS (0x0C)...", Level.DEBUG)
         sendp(cts_packet, iface=self.ap.interface, verbose=False)
 
     def arp_resp(self, receiver_mac, receiver_ip):
@@ -188,7 +189,7 @@ class Callbacks(object):
                      / SNAP(OUI=0x000000, code=ETH_P_ARP) \
                      / ARP(psrc=self.ap.ip, pdst=receiver_ip, op="is-at", hwsrc=self.ap.mac, hwdst=receiver_mac)
 
-        printd("Sending ARP Response...", 2)
+        printd("Sending ARP Response...", Level.DEBUG)
         sendp(arp_packet, iface=self.ap.interface, verbose=False)
 
     def dot1x_eap_resp(self, receiver, eap_code, eap_type, eap_data):
@@ -208,7 +209,7 @@ class Callbacks(object):
     def unspecified_raw(self, raw_data):
         raw_packet = Raw(raw_data)
 
-        printd("Sending RAW packet...", 2)
+        printd("Sending RAW packet...", Level.DEBUG)
         sendp(raw_packet, iface=self.ap.interface, verbose=False)
 
     def dhcp_offer(self, client_mac, client_ip, xid):
