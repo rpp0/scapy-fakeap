@@ -1,6 +1,7 @@
 
 from scapy.all import sniff
 from .eap import *
+from .arp import *
 from rpyutils import check_root, get_frequency, if_hwaddr
 from .callbacks import Callbacks
 from .tint import TunInterface
@@ -64,7 +65,10 @@ class FakeAccessPoint(object):
         self.sc = 0
         self.aid = 0
         self.mutex = threading.Lock()
-        self.eap_manager = EAPManager()
+
+        # Protocol handlers
+        self.eap = EAPHandler()
+        self.arp = ARPHandler()
 
         self.add_ssid(ssid)
         self.beaconTransmitter = self.FakeBeaconTransmitter(self)

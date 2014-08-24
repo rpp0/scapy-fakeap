@@ -17,6 +17,7 @@ You will need to have the following packages installed:
 - ```scapy```
 - ```ip```
 - ```airmon-ng```
+- ```dnsmasq``` (optional)
 
 Then, run ```python2 setup.py install``` to install ```scapy-fakeap```.
 
@@ -52,6 +53,10 @@ The behaviour of the AP can be completely customized by changing the callbacks a
 - ```cb_dot11_rts```: Triggered on reception of an RTS frame. The default behaviour is to reply with a CTS frame.
 - ```cb_arp_req```: Triggered on reception of an ARP Request. The default behaviour is to reply with an ARP Response.
 - ```cb_dot1X_eap_req```: Triggered on reception of an 802.1X EAP Request frame. The default behaviour is to reply with an 802.1X EAP Response frame.
+- ```cb_dhcp_discover```: Triggered on reception of a DHCP Discover message. The default behaviour is to forward the message to ```dnsmasq```.
+- ```cb_dhcp_request```: Triggered on reception of a DHCP Request message. The default behaviour is to forward the message to ```dnsmasq```.
+- ```cb_dns_request```: Triggered on reception of a DNS Request message. The default behaviour is to forward the message to ```dnsmasq```.
+- ```cb_tint_read```: Triggered on reception of a packet from the ```fakeap``` virtual interface. This callback defines when callbacks related to this interface are triggered.
 
 
 ### Writing your own callback:

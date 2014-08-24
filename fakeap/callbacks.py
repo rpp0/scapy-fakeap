@@ -4,6 +4,7 @@ from .constants import *
 
 from scapy.layers.dot11 import *
 from scapy.layers.dhcp import *
+from scapy.layers.dns import *
 
 
 class Callbacks(object):
@@ -24,6 +25,8 @@ class Callbacks(object):
 
         self.cb_dhcp_discover = self.dot11_to_tint
         self.cb_dhcp_request = self.dot11_to_tint
+        self.cb_dns_request = self.dot11_to_tint
+        self.cb_other_request = self.dot11_to_tint
 
         self.cb_tint_read = self.recv_pkt_tint
 
@@ -58,7 +61,10 @@ class Callbacks(object):
                 elif packet.subtype == DOT11_SUBTYPE_ASSOC_REQ or packet.subtype == DOT11_SUBTYPE_REASSOC_REQ:
                     if packet.addr1 == self.ap.mac:
                         self.cb_dot11_assoc_req(packet.addr2, packet.subtype)
-                        self.cb_dot1X_eap_req(packet.addr2, EAPCode.REQUEST, EAPType.IDENTITY, None)
+
+                        # After association, start EAP session if enabled
+                        if self.ap.ieee8021x:
+                            self.cb_dot1X_eap_req(packet.addr2, EAPCode.REQUEST, EAPType.IDENTITY, None)
 
             # Data packet
             if packet.type == DOT11_TYPE_DATA:
@@ -66,7 +72,7 @@ class Callbacks(object):
                     if packet.addr1 == self.ap.mac:
                         # EAPOL Start
                         if packet[EAPOL].type == 0x01:
-                            self.ap.eap_manager.reset_id()
+                            self.ap.eap.reset_id()
                             self.dot1x_eap_resp(packet.addr2, EAPCode.REQUEST, EAPType.IDENTITY, None)
                 if EAP in packet:
                     if packet[EAP].code == EAPCode.RESPONSE:  # Responses
@@ -85,7 +91,7 @@ class Callbacks(object):
                             printd("NAK suggested method " + EAPType.convert_type(method), Level.INFO)
 
                 elif ARP in packet:
-                    if packet[ARP].pdst == self.ap.ip:
+                    if packet[ARP].pdst == self.ap.ip.split('/')[0]:
                         self.cb_arp_req(packet.addr2, packet[ARP].psrc)
                 elif DHCP in packet:
                     if packet.addr1 == self.ap.mac:
@@ -94,6 +100,10 @@ class Callbacks(object):
 
                         if packet[DHCP].options[0][1] == 3:
                             self.cb_dhcp_request(packet)
+                elif DNS in packet:
+                    self.cb_dns_request(packet)
+                elif IP in packet:
+                    self.cb_other_request(packet)
 
         except Exception as err:
             print("Unknown error at monitor interface: %s" % repr(err))
@@ -104,8 +114,17 @@ class Callbacks(object):
             if BOOTP in packet:
                 client_mac = bytes_to_mac(packet[BOOTP].chaddr[:6])
 
-                printd("DHCP packet for: " + client_mac, Level.DEBUG)
+                if DHCP in packet and packet[DHCP].options[0][1] == 5:  # DHCP ACK
+                    client_ip = packet[BOOTP].yiaddr
+                    self.ap.arp.add_entry(client_ip, client_mac)
+                    printd("IP %s -> %s" % (client_ip, client_mac), Level.INFO)
+
+                # Forward our message to the client
                 self.dot11_encapsulate_ip(client_mac, packet)
+            else:
+                client_ip = packet[IP].dst
+                self.dot11_encapsulate_ip(self.ap.arp.get_entry(client_ip), packet)
+
         except Exception as err:
             print("Unknown error at tun interface: %s" % repr(err))
 
@@ -187,7 +206,7 @@ class Callbacks(object):
                      / Dot11(type="Data", subtype=0, addr1=receiver_mac, addr2=self.ap.mac, addr3=self.ap.mac, SC=self.ap.next_sc(), FCfield='from-DS') \
                      / LLC(dsap=0xaa, ssap=0xaa, ctrl=0x03) \
                      / SNAP(OUI=0x000000, code=ETH_P_ARP) \
-                     / ARP(psrc=self.ap.ip, pdst=receiver_ip, op="is-at", hwsrc=self.ap.mac, hwdst=receiver_mac)
+                     / ARP(psrc=self.ap.ip.split('/')[0], pdst=receiver_ip, op="is-at", hwsrc=self.ap.mac, hwdst=receiver_mac)
 
         printd("Sending ARP Response...", Level.DEBUG)
         sendp(arp_packet, iface=self.ap.interface, verbose=False)
@@ -198,7 +217,7 @@ class Callbacks(object):
                      / LLC(dsap=0xaa, ssap=0xaa, ctrl=0x03) \
                      / SNAP(OUI=0x000000, code=0x888e) \
                      / EAPOL(version=1, type=0) \
-                     / EAP(code=eap_code, id=self.ap.eap_manager.next_id(), type=eap_type)
+                     / EAP(code=eap_code, id=self.ap.eap.next_id(), type=eap_type)
 
         if not eap_data is None:
             eap_packet = eap_packet / Raw(eap_data)
