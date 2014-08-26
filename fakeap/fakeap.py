@@ -61,6 +61,7 @@ class FakeAccessPoint(object):
         self.wpa = 0
         self.ieee8021x = 0
         self.lfilter = None
+        self.hidden = False
         if bpffilter == "":
             self.bpffilter = "not ( wlan type mgt subtype beacon ) and ((ether dst host " + self.mac + ") or (ether dst host ff:ff:ff:ff:ff:ff))"
         self.ip = '10.0.0.1/24'
@@ -75,7 +76,6 @@ class FakeAccessPoint(object):
 
         self.add_ssid(ssid)
         self.beaconTransmitter = self.FakeBeaconTransmitter(self)
-        self.beaconTransmitter.start()
 
         self.tint = None
 
@@ -138,8 +138,12 @@ class FakeAccessPoint(object):
 
     def run(self):
         check_root()
+        if not self.hidden:
+            self.beaconTransmitter.start()
+
         self.tint = TunInterface(self)
         self.tint.start()
+
         if self.inet_interface is not None:
             self.share_internet(self.inet_interface)
         scapyconf.iface = self.interface
