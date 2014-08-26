@@ -1,13 +1,15 @@
 
+import subprocess
 from scapy.all import sniff
 from .eap import *
 from .arp import *
-from rpyutils import check_root, get_frequency, if_hwaddr
+from rpyutils import check_root, get_frequency, if_hwaddr, clear_ip_tables
 from .callbacks import Callbacks
 from .tint import TunInterface
 from .conf import Conf
 from time import time, sleep
 from scapy.layers.dot11 import RadioTap, conf as scapyconf
+from scapy.layers.inet import TCP
 
 
 class FakeAccessPoint(object):
@@ -53,6 +55,7 @@ class FakeAccessPoint(object):
         self.current_ssid_index = 0
 
         self.interface = interface
+        self.inet_interface = None
         self.channel = 1
         self.mac = if_hwaddr(interface)
         self.wpa = 0
@@ -75,6 +78,24 @@ class FakeAccessPoint(object):
         self.beaconTransmitter.start()
 
         self.tint = None
+
+    def share_internet(self, dev):
+        TCP.payload_guess = []
+        clear_ip_tables()
+
+        # Postrouting
+        if subprocess.call(['iptables', '--table', 'nat', '--append', 'POSTROUTING', '--out-interface', dev, '-j', 'MASQUERADE']):
+            printd("Failed to setup postrouting for interface %s." % dev, Level.CRITICAL)
+
+        # Forward
+        if subprocess.call(['iptables', '--append', 'FORWARD', '--in-interface', self.tint.name, '-j', 'ACCEPT']):
+            printd("Failed to setup forwarding for interface %s." % self.tint.name, Level.CRITICAL)
+
+        # Enable IP forwarding
+        if subprocess.call(['sysctl', '-w', 'net.ipv4.ip_forward=1']):
+            printd("Failed to enable IP forwarding.", Level.CRITICAL)
+
+        printd("IP packets will be routed through %s." % dev, Level.INFO)
 
     def add_ssid(self, ssid):
         if not ssid in self.ssids and ssid != '':
@@ -119,5 +140,7 @@ class FakeAccessPoint(object):
         check_root()
         self.tint = TunInterface(self)
         self.tint.start()
+        if self.inet_interface is not None:
+            self.share_internet(self.inet_interface)
         scapyconf.iface = self.interface
         sniff(iface=self.interface, prn=self.callbacks.cb_recv_pkt, store=0, filter=self.bpffilter)

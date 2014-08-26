@@ -15,6 +15,7 @@ class TunInterface(threading.Thread):
         if len(name) > IFNAMSIZ:
             raise Exception("Tun interface name cannot be larger than " + str(IFNAMSIZ))
 
+        self.name = name
         self.setDaemon(True)
         self.ap = ap
 

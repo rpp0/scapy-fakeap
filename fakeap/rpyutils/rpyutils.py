@@ -70,6 +70,17 @@ def set_ip_address(dev, ip):
         printd("Failed to bring device %s up." % dev, Level.CRITICAL)
 
 
+def clear_ip_tables():
+    if subprocess.call(['iptables', '--flush']):
+        printd("Failed to flush iptables.", Level.CRITICAL)
+    if subprocess.call(['iptables', '--table', 'nat', '--flush']):
+        printd("Failed to flush iptables NAT.", Level.CRITICAL)
+    if subprocess.call(['iptables', '--delete-chain']):
+        printd("Failed to delete iptables chain.", Level.CRITICAL)
+    if subprocess.call(['iptables', '--table', 'nat', '--delete-chain']):
+        printd("Failed to delete iptables NAT chain.", Level.CRITICAL)
+
+
 def printd(string, level):
     if VERBOSITY >= level:
         print(string)

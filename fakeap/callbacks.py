@@ -4,7 +4,8 @@ from .constants import *
 
 from scapy.layers.dot11 import *
 from scapy.layers.dhcp import *
-from scapy.layers.dns import *
+from scapy.layers.dns import DNS
+from scapy.layers.inet import TCP, UDP
 
 
 class Callbacks(object):
@@ -264,11 +265,20 @@ class Callbacks(object):
         sendp(dhcp_ack_packet, iface=self.ap.interface, verbose=False)
 
     def dot11_encapsulate_ip(self, client_mac, ip_packet):
+        if IP in ip_packet:
+            del ip_packet[IP].chksum
+            del ip_packet[IP].len
+        else:
+            raise Exception("Attempted to encapsulate non-IP packet.")
+
+        if UDP in ip_packet:
+            del ip_packet[UDP].len
+
         response_packet = self.ap.get_radiotap_header() \
                           / Dot11(type="Data", subtype=0, addr1=client_mac, addr2=self.ap.mac, SC=self.ap.next_sc(), FCfield='from-DS') \
                           / LLC(dsap=0xaa, ssap=0xaa, ctrl=0x03) \
                           / SNAP(OUI=0x000000, code=ETH_P_IP) \
-                          / ip_packet
+                          / Raw(ip_packet)
 
         sendp(response_packet, iface=self.ap.interface, verbose=False)
 
