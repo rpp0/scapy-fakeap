@@ -2,6 +2,7 @@
 scapy_fakeap.egg-info/
 TODO
 pull_trees.sh
+push_trees.sh
 examples/dev.py
 *.pyc
 *.conf

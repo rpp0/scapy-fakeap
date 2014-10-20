@@ -64,6 +64,8 @@ class FakeAccessPoint(object):
         self.hidden = False
         if bpffilter == "":
             self.bpffilter = "not ( wlan type mgt subtype beacon ) and ((ether dst host " + self.mac + ") or (ether dst host ff:ff:ff:ff:ff:ff))"
+        else:
+            self.bpffilter = bpffilter
         self.ip = '10.0.0.1/24'
         self.boottime = time()
         self.sc = 0
