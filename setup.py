@@ -1,9 +1,9 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='scapy-fakeap',
     version='0.1',
-    packages=['fakeap'],
+    packages=find_packages(),
     url='',
     license='GPLv2',
     author='rpp0',
