@@ -25,7 +25,14 @@ Then, run ```python2 setup.py install``` to install ```scapy-fakeap```.
 Examples
 --------
 
-Setting up a basic AP with ```scapy-fakeap``` is extremely simple, as shown in the example below:
+First, set up your device in monitor mode. You can use ```airmon-ng``` or ```iw```:
+
+```
+# iw dev wlan0 interface add mon0 type monitor
+# ifconfig mon0 up
+```
+
+From there, setting up a basic AP with ```scapy-fakeap``` is extremely simple, as shown in the example below:
 
 ```python
 # This example is a simple 'hello world' for scapy-fakeap.

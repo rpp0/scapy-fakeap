@@ -221,13 +221,13 @@ class Callbacks(object):
                      / EAP(code=eap_code, id=self.ap.eap.next_id(), type=eap_type)
 
         if not eap_data is None:
-            eap_packet = eap_packet / Raw(eap_data)
+            eap_packet = eap_packet / str(eap_data)
 
         printd("Sending EAP Packet (code = %d, type = %d, data = %s)..." % (eap_code, eap_type, eap_data), Level.DEBUG)
         sendp(eap_packet, iface=self.ap.interface, verbose=False)
 
     def unspecified_raw(self, raw_data):
-        raw_packet = Raw(raw_data)
+        raw_packet = str(raw_data)
 
         printd("Sending RAW packet...", Level.DEBUG)
         sendp(raw_packet, iface=self.ap.interface, verbose=False)
@@ -278,7 +278,7 @@ class Callbacks(object):
                           / Dot11(type="Data", subtype=0, addr1=client_mac, addr2=self.ap.mac, SC=self.ap.next_sc(), FCfield='from-DS') \
                           / LLC(dsap=0xaa, ssap=0xaa, ctrl=0x03) \
                           / SNAP(OUI=0x000000, code=ETH_P_IP) \
-                          / Raw(ip_packet)
+                          / str(ip_packet)
 
         sendp(response_packet, iface=self.ap.interface, verbose=False)
 
